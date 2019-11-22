@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    tools:context=".SplashScreen">
+
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:src="@drawable/nit_logo"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:text="NIT Warangal"
+        android:layout_marginTop="20dp"
+        android:textSize="20dp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:text="M.tech Final Year Project"
+        android:layout_marginTop="20dp"
+        android:textSize="30dp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"
+        android:gravity="center"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_marginTop="50dp"
+        android:textSize="17dp"
+        android:textStyle="bold"
+        android:text="Made By\nHitesh Verma\n[M.tech CSIS] [187557]"
+        android:gravity="center"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp"
+        android:textSize="17dp"
+        android:text="Under the Guidance Of\nDr. Smita Naval\nAsst. Prof. Dept. of CSE,\nNIT Warangal"
+        android:gravity="center"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="top|center_vertical|center_horizontal|center"
+    android:gravity="top|center_vertical|center_horizontal|center"
+    android:orientation="vertical"
+    tools:context=".ui.home.RecordSensorData">
+
+
+    <LinearLayout
+        android:id="@+id/linLayoutListLabels"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:weightSum="9">
+
+            <Button
+                android:id="@+id/bMoveForward"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="2.8"
+                android:background="@color/yellow_200"
+                android:drawableLeft="@drawable/ic_arrow_upward_black_24dp"
+                android:text="Move Forward" />
+
+            <Button
+                android:id="@+id/bStop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="3.4"
+                android:background="@color/orange_300"
+                android:text="Stop" />
+
+            <Button
+                android:id="@+id/bMoveBackWard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="2.8"
+                android:background="@color/yellow_200"
+                android:drawableLeft="@drawable/ic_arrow_downward_black_24dp"
+                android:text="Move BackWard" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:weightSum="10">
+
+            <Button
+                android:id="@+id/bLeftTurn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:background="@color/yellow_200"
+                android:drawableLeft="@drawable/ic_arrow_back_black_24dp"
+                android:text="Left Turn" />
+
+            <Button
+                android:id="@+id/bRightTurn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="5"
+                android:background="@color/yellow_200"
+                android:drawableRight="@drawable/ic_arrow_forward_black_24dp"
+                android:text="Right Turn" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:gravity="center">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:layout_marginRight="20dp"
+            android:elevation="10dp"
+            app:cardBackgroundColor="@color/green_500"
+            app:cardCornerRadius="25dp">
+
+            <ImageView
+                android:id="@+id/ivStart_Pause"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:padding="3dp"
+                android:src="@drawable/ic_play_arrow_black_24dp" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:layout_marginRight="20dp"
+            android:elevation="10dp"
+            app:cardBackgroundColor="@color/red_700"
+            app:cardCornerRadius="25dp">
+
+            <ImageView
+                android:id="@+id/ivStop"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:padding="4dp"
+                android:src="@drawable/ic_stop_black_24dp"
+                android:visibility="gone" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:elevation="10dp"
+            app:cardBackgroundColor="@color/orange_600"
+            app:cardCornerRadius="10dp">
+
+            <TextView
+                android:id="@+id/tvHide"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:text="Hide"
+                android:textColor="@color/quantum_white_100"
+                android:textSize="17dp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <androidx.viewpager.widget.ViewPager
+                android:id="@+id/chartViewPager"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <ImageButton
+                android:id="@+id/leftNavBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="left|center_vertical|center_horizontal|center"
+                android:background="@drawable/icon_left_arrow" />
+
+            <ImageButton
+                android:id="@+id/rightNavBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="right|center_vertical|center_horizontal|center"
+                android:background="@drawable/icon_right_arrow" />
+        </FrameLayout>
+    </RelativeLayout>
+</LinearLayout>
