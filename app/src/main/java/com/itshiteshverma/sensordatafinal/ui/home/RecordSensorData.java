@@ -1,5 +1,6 @@
 package com.itshiteshverma.sensordatafinal.ui.home;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -14,15 +15,13 @@ import android.os.Handler;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout.LayoutParams;
-import android.widget.TableLayout;
-import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,13 +34,13 @@ import androidx.viewpager.widget.ViewPager;
 import com.github.mikephil.charting.charts.LineChart;
 import com.itshiteshverma.sensordatafinal.R;
 
+import org.zeroturnaround.zip.commons.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.zeroturnaround.zip.commons.IOUtils;
 
 
 public class RecordSensorData extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
@@ -70,6 +69,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     Boolean START_PAUSE = false;
     Button bForward, bStop, bBackward, bLeft, bRight;
     String currentLabel = "";
+    Long READ_SENSOR_TIME_START;
 
 
     public void onAccuracyChanged(Sensor sensor, int i) {
@@ -78,19 +78,24 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
-        setContentView((int) R.layout.activity_record_sensor_data);
+        setContentView(R.layout.activity_record_sensor_data);
 
+        currentLabel = "NA";
         toastHelper = new ToastHelper(RecordSensorData.this, getLayoutInflater());
-        this.chartViewPager = (ViewPager) findViewById(R.id.chartViewPager);
-        this.leftNavBtn = (ImageButton) findViewById(R.id.leftNavBtn);
-        this.rightNavBtn = (ImageButton) findViewById(R.id.rightNavBtn);
+        this.chartViewPager = findViewById(R.id.chartViewPager);
+        this.leftNavBtn = findViewById(R.id.leftNavBtn);
+        this.rightNavBtn = findViewById(R.id.rightNavBtn);
         this.ivStartPause = findViewById(R.id.ivStart_Pause);
         bForward = findViewById(R.id.bMoveForward);
         bStop = findViewById(R.id.bStop);
         bBackward = findViewById(R.id.bMoveBackWard);
         bLeft = findViewById(R.id.bLeftTurn);
         bRight = findViewById(R.id.bRightTurn);
+        bForward.setOnClickListener(this);
+        bBackward.setOnClickListener(this);
+        bStop.setOnClickListener(this);
 
+        setTouchListner();
 
         ivStop = findViewById(R.id.ivStop);
         tvHide = findViewById(R.id.tvHide);
@@ -100,7 +105,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         initCharts();
         initDataFiles();
         this.asyncFileWriter = new AsyncFileWriter(SLEEP_DURATION_MILLIS, this.queue);
-        this.asyncFileWriter.execute(new Void[0]);
+        this.asyncFileWriter.execute();
         onClickStartPauseButton();
         onClickStopBtn();
         onClickHideBtn();
@@ -109,11 +114,55 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         onChangeChartViewPager();
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    private void setTouchListner() {
+
+        bLeft.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    //perform your animation when button is touched and held
+                    currentLabel = "Left Turn";
+                    bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    bLeft.setBackgroundColor(getResources().getColor(R.color.green_400));
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    //perform your animation when button is released
+                    currentLabel = "Move Forward";
+                    bLeft.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    bForward.setBackgroundColor(getResources().getColor(R.color.green_400));
+                }
+                return true;
+            }
+        });
+
+        bRight.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    //perform your animation when button is touched and held
+                    currentLabel = "Right Turn";
+                    bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    bRight.setBackgroundColor(getResources().getColor(R.color.green_400));
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    //perform your animation when button is released
+                    currentLabel = "Move Forward";
+                    bRight.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    bForward.setBackgroundColor(getResources().getColor(R.color.green_400));
+                }
+                return true;
+            }
+        });
+
+
+    }
+
     public void onSensorChanged(SensorEvent sensorEvent) {
         int type = sensorEvent.sensor.getType();
-        File file = (File) this.filesSpArray.get(type);
+        File file = this.filesSpArray.get(type);
         int i = this.nSamplesSpArray.get(type, 0);
-        LineChart lineChart = (LineChart) this.chartsSpArray.get(type);
+        LineChart lineChart = this.chartsSpArray.get(type);
         String sensorEventToString = sensorEventToString(sensorEvent, VALUES_SEPARATOR);
         this.queue.add(new Object[]{sensorEventToString, file});
         int i2 = i + 1;
@@ -135,10 +184,10 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle((CharSequence) "Stop current session ?");
-        builder.setMessage((CharSequence) "The current session will be stopped and saved. Do you want to proceed to Main Page ?");
-        builder.setNegativeButton("CANCEL", (OnClickListener) null);
-        builder.setPositiveButton("OK", (OnClickListener) new OnClickListener() {
+        builder.setTitle("Stop current session ?");
+        builder.setMessage("The current session will be stopped and saved. Do you want to proceed to Main Page ?");
+        builder.setNegativeButton("CANCEL", null);
+        builder.setPositiveButton("OK", new OnClickListener() {
             public final void onClick(DialogInterface dialogInterface, int i) {
                 RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
                 RecordSensorData.this.asyncFileWriter.stop();
@@ -163,12 +212,16 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
                     ivStartPause.setImageResource(R.drawable.ic_play_arrow_black_24dp);
                     ivStartPause.setBackgroundColor(getResources().getColor(R.color.green_500));
                     START_PAUSE = false;
+
                 } else {
                     //On Play has Been Clicked
                     ivStop.setVisibility(View.VISIBLE);
                     tvHide.setVisibility(View.VISIBLE);
                     ivStartPause.setImageResource(R.drawable.ic_pause_black_24dp);
                     ivStartPause.setBackgroundColor(getResources().getColor(R.color.blue_500));
+                    if (READ_SENSOR_TIME_START == null) {
+                        READ_SENSOR_TIME_START = System.currentTimeMillis();
+                    }
 
                     new Handler().postDelayed(new Runnable() {
                         public final void run() {
@@ -231,13 +284,13 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
 
             public Object instantiateItem(ViewGroup viewGroup, int i) {
                 View inflate = ((LayoutInflater) RecordSensorData.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.charts_page, null);
-                Utils.replaceView((LineChart) inflate.findViewById(R.id.currentChart), (View) RecordSensorData.this.chartsSpArray.get(RecordSensorData.this.chartsSpArray.keyAt(i)));
+                Utils.replaceView(inflate.findViewById(R.id.currentChart), RecordSensorData.this.chartsSpArray.get(RecordSensorData.this.chartsSpArray.keyAt(i)));
                 viewGroup.addView(inflate, 0);
                 return inflate;
             }
 
             public boolean isViewFromObject(View view, Object obj) {
-                return view == ((View) obj);
+                return view == obj;
             }
 
             public void destroyItem(ViewGroup viewGroup, int i, Object obj) {
@@ -323,94 +376,10 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
             this.chartsSpArray.put(intValue, lineChart);
         }
     }
-//
-//    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
-//    private void initLabelButtonsList() {
-//        int i;
-//        int i2;
-////        TableLayout tableLayout = (TableLayout) findViewById(R.id.tabLayoutLabels);
-////        ArrayList stringArrayListExtra = getIntent().getStringArrayListExtra(MainPage.LABELS_KEY);
-//        if (!stringArrayListExtra.isEmpty()) {
-//            this.currentLabel = (String) stringArrayListExtra.get(0);
-//            i2 = (int) Math.ceil(Math.sqrt((double) stringArrayListExtra.size()));
-//            i = ((stringArrayListExtra.size() + i2) - 1) / i2;
-//        } else {
-//            TableRow tableRow = new TableRow(this);
-//            Button newLabelButton = newLabelButton("No labels selected", false, R.color.green_100, 12.0f);
-//            newLabelButton.setBackgroundResource(R.drawable.contained_button_bg);
-//            tableRow.addView(newLabelButton);
-//            tableLayout.addView(tableRow);
-//            i2 = 1;
-//            i = 0;
-//        }
-//        for (int i3 = 0; i3 < i2; i3++) {
-//            tableLayout.setColumnShrinkable(i3, true);
-//            tableLayout.setColumnStretchable(i3, true);
-//        }
-//        for (int i4 = 0; i4 < i; i4++) {
-//            TableRow tableRow2 = new TableRow(this);
-//            for (int i5 = 0; i5 < i2; i5++) {
-//                int i6 = (i4 * i2) + i5;
-//                if (i6 <= stringArrayListExtra.size() - 1) {
-//                    Button newLabelButton2 = newLabelButton((String) stringArrayListExtra.get(i6), true, R.color.quantum_white_100, 15.0f);
-//                    this.buttons.add(newLabelButton2);
-//                    tableRow2.addView(newLabelButton2);
-//                }
-//            }
-//            tableLayout.addView(tableRow2);
-//        }
-//    }
-
-//    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
-//    private void refreshLabelButtons() {
-//        ArrayList stringArrayListExtra = getIntent().getStringArrayListExtra(MainPage.LABELS_KEY);
-//        for (int i = 0; i < stringArrayListExtra.size(); i++) {
-//            String str = (String) stringArrayListExtra.get(i);
-//            Button button = (Button) this.buttons.get(i);
-//            button.setBackground(Utils.makeSelector(this));
-//            if (str.equals(this.currentLabel)) {
-//                button.setBackground(getResources().getDrawable(R.drawable.label_button_red));
-//            }
-//        }
-//    }
-//
-//    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
-//    private Button newLabelButton(String str, boolean z, int i, float f) {
-//        Button button = new Button(this);
-//        button.setText(str);
-//        button.setTextColor(getResources().getColor(i));
-//        button.setTextSize(f);
-//        button.setEnabled(z);
-//        if (!z) {
-//            return button;
-//        }
-//        button.setBackground(Utils.makeSelector(this));
-//        if (str.equals(this.currentLabel)) {
-//            button.setBackground(getResources().getDrawable(R.drawable.label_button_red));
-//        }
-//        button.setOnClickListener(new View.OnClickListener() {
-//            public final void onClick(View view) {
-//                Toast.makeText(RecordSensorData.this, "Press for 1 second to select", Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//        button.setOnLongClickListener(new OnLongClickListener() {
-//            public final boolean onLongClick(View view) {
-//                return RecordSensorData.lambda$newLabelButton$10(RecordSensorData.this, view);
-//            }
-//        });
-//        return button;
-//    }
-//
-//    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
-//    public static /* synthetic */ boolean lambda$newLabelButton$10(RecordSensorData RecordSensorData, View view) {
-//        RecordSensorData.currentLabel = ((Button) view).getText().toString();
-//        RecordSensorData.refreshLabelButtons();
-//        return true;
-//    }
 
     private String sensorEventToString(SensorEvent sensorEvent, String str) {
         StringBuilder sb = new StringBuilder();
-        sb.append(System.currentTimeMillis());
+        sb.append(System.currentTimeMillis() - READ_SENSOR_TIME_START);
         sb.append(str);
         sb.append(Utils.floatsToString(sensorEvent.values, str));
         String sb2 = sb.toString();
@@ -432,9 +401,24 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         switch (v.getId()) {
             case R.id.bMoveBackWard:
                 currentLabel = "Move BackWard";
+                bStop.setBackgroundColor(getResources().getColor(R.color.orange_300));
+                bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
                 bBackward.setBackgroundColor(getResources().getColor(R.color.green_400));
                 break;
-            // Do something
+            case R.id.bMoveForward:
+                currentLabel = "Move Forward";
+                bStop.setBackgroundColor(getResources().getColor(R.color.orange_300));
+                bForward.setBackgroundColor(getResources().getColor(R.color.green_300));
+                bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                break;
+
+            case R.id.bStop:
+                currentLabel = "Stop";
+                bStop.setBackgroundColor(getResources().getColor(R.color.red_400));
+                bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                break;
+
         }
     }
 }

@@ -16,13 +16,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.itshiteshverma.sensordatafinal.R;
@@ -80,8 +76,8 @@ public class MainPage extends Fragment {
         etFileName = view.findViewById(R.id.dbNameEditText);
         radioGroupFrequency = view.findViewById(R.id.radioGroupFrequency);
         llMainLayout = view.findViewById(R.id.llMainLayout);
-        hourNumberPicker = (NumberPicker) view.findViewById(R.id.hour_picker);
-        minutesNumberPicker = (NumberPicker) view.findViewById(R.id.minute_picker);
+        hourNumberPicker = view.findViewById(R.id.hour_picker);
+        minutesNumberPicker = view.findViewById(R.id.minute_picker);
 
         initilize();
         return view;
@@ -105,8 +101,8 @@ public class MainPage extends Fragment {
                 dialog.getWindow().setBackgroundDrawable(new ColorDrawable(0));
                 dialog.setCancelable(true);
 
-                listOfSensorsView = (LinearLayout) dialog.findViewById(R.id.listOfSensorsView);
-                Button okBtn = (Button) dialog.findViewById(R.id.okSensorsSelectionBtn);
+                listOfSensorsView = dialog.findViewById(R.id.listOfSensorsView);
+                Button okBtn = dialog.findViewById(R.id.okSensorsSelectionBtn);
 
                 final List availableSensors = Utils.getAvailableSensors(getActivity());
                 final ArrayList<CheckBox> arrayList = createSensorsCheckBoxes(availableSensors);
@@ -116,7 +112,7 @@ public class MainPage extends Fragment {
                     public void onClick(View v) {
                         ArrayList<Integer> arrayList2 = new ArrayList<>();
                         for (int i = 0; i < arrayList.size(); i++) {
-                            if (((CheckBox) arrayList.get(i)).isChecked()) {
+                            if (arrayList.get(i).isChecked()) {
                                 arrayList2.add(Integer.valueOf(((Sensor) availableSensors.get(i)).getType()));
                             }
                         }
@@ -151,7 +147,7 @@ public class MainPage extends Fragment {
                     intent.putExtra(SENSOR_TYPES_KEY, MainPage.this.selectedSensorTypes);
                     startActivity(intent);
                 } else {
-                    toastHelper.toastIconError("Errors need to be corrected.");
+                    toastHelper.toastIconError("Add a Sensor.");
                 }
             }
         });
