@@ -1,6 +1,5 @@
 package com.itshiteshverma.sensordatafinal.ui.home;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -15,12 +14,14 @@ import android.os.Handler;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,6 +52,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     static final int NAV_ARROWS_TRANSPARENT = 20;
     static final int SLEEP_DURATION_MILLIS = 2000;
     static final String VALUES_SEPARATOR = ",";
+    static final int BUFFER_TIME_MILLS = 1000;
 
     AsyncFileWriter asyncFileWriter;
     ArrayList<Button> buttons = new ArrayList<>();
@@ -67,10 +69,18 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     ImageView ivStartPause, ivStop;
     TextView tvHide;
     Boolean START_PAUSE = false;
-    Button bForward, bStop, bBackward, bLeft, bRight;
+    Button bForward, bStop;
     String currentLabel = "";
     Long READ_SENSOR_TIME_START;
 
+    TextView CompassDegree, RelativeDegree;
+    LinearLayout LeftTurn, RightTurn;
+    ImageView compassDial;
+    boolean INITIAL_VALUE_SET = false;
+    private Compass compass;
+    private float currentAzimuth;
+    private int INITIAL_VALUE;
+    private int MARGIN_FIX_ERROR = 10;
 
     public void onAccuracyChanged(Sensor sensor, int i) {
     }
@@ -86,16 +96,18 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         this.leftNavBtn = findViewById(R.id.leftNavBtn);
         this.rightNavBtn = findViewById(R.id.rightNavBtn);
         this.ivStartPause = findViewById(R.id.ivStart_Pause);
+        CompassDegree = findViewById(R.id.tvDegree);
+        RelativeDegree = findViewById(R.id.tvRelativeDegree);
+        LeftTurn = findViewById(R.id.llLeftTurn);
+        RightTurn = findViewById(R.id.llRightTurn);
+        compassDial = findViewById(R.id.compass_dial);
+
+
         bForward = findViewById(R.id.bMoveForward);
         bStop = findViewById(R.id.bStop);
-        bBackward = findViewById(R.id.bMoveBackWard);
-        bLeft = findViewById(R.id.bLeftTurn);
-        bRight = findViewById(R.id.bRightTurn);
         bForward.setOnClickListener(this);
-        bBackward.setOnClickListener(this);
         bStop.setOnClickListener(this);
 
-        setTouchListner();
 
         ivStop = findViewById(R.id.ivStop);
         tvHide = findViewById(R.id.tvHide);
@@ -112,51 +124,12 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         onClickNavBtns();
         setAdapterChartViewPager();
         onChangeChartViewPager();
-    }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private void setTouchListner() {
-
-        bLeft.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    //perform your animation when button is touched and held
-                    currentLabel = "Left Turn";
-                    bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                    bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                    bLeft.setBackgroundColor(getResources().getColor(R.color.green_400));
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    //perform your animation when button is released
-                    currentLabel = "Move Forward";
-                    bLeft.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                    bForward.setBackgroundColor(getResources().getColor(R.color.green_400));
-                }
-                return true;
-            }
-        });
-
-        bRight.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    //perform your animation when button is touched and held
-                    currentLabel = "Right Turn";
-                    bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                    bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                    bRight.setBackgroundColor(getResources().getColor(R.color.green_400));
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    //perform your animation when button is released
-                    currentLabel = "Move Forward";
-                    bRight.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                    bForward.setBackgroundColor(getResources().getColor(R.color.green_400));
-                }
-                return true;
-            }
-        });
-
+        setupCompass();
 
     }
+
+
 
     public void onSensorChanged(SensorEvent sensorEvent) {
         int type = sensorEvent.sensor.getType();
@@ -178,6 +151,125 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         super.onDestroy();
         this.sensorManager.unregisterListener(this);
         this.asyncFileWriter.stop();
+    }
+
+    private void setupCompass() {
+        compass = new Compass(this);
+        Compass.CompassListener cl = new Compass.CompassListener() {
+            @Override
+            public void onNewAzimuth(float azimuth) {
+                adjustArrow(azimuth);
+            }
+        };
+        compass.setListener(cl);
+    }
+
+
+    private void adjustArrow(float azimuth) {
+
+
+        Animation animator = new RotateAnimation(-currentAzimuth, -azimuth,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
+                0.5f);
+        currentAzimuth = azimuth;
+        String display = (int) currentAzimuth + "";
+        String cardDirect;
+
+        if (currentAzimuth == 0 || currentAzimuth == 360)
+            cardDirect = "N";
+        else if (currentAzimuth > 0 && currentAzimuth < 90)
+            cardDirect = "NE";
+        else if (currentAzimuth == 90)
+            cardDirect = "E";
+        else if (currentAzimuth > 90 && currentAzimuth < 180)
+            cardDirect = "SE";
+        else if (currentAzimuth == 180)
+            cardDirect = "S";
+        else if (currentAzimuth > 180 && currentAzimuth < 270)
+            cardDirect = "SW";
+        else if (currentAzimuth == 270)
+            cardDirect = "W";
+        else if (currentAzimuth > 270 && currentAzimuth < 360)
+            cardDirect = "NW";
+        else
+            cardDirect = "Unknown";
+
+        CompassDegree.setText(display + "°" + " " + cardDirect);
+
+        if (!INITIAL_VALUE_SET) {
+            //Value is not set
+            INITIAL_VALUE = (int) currentAzimuth;
+            INITIAL_VALUE_SET = true;
+        } else {
+            //String temp = String.valueOf(getDifference(INITIAL_VALUE, (int) currentAzimuth));
+            int temp = getDirectionalDifference(INITIAL_VALUE, (int) currentAzimuth);
+            if (temp < 0) {
+                //Negative // Possible a Right Turn
+                if (temp * -1 >= 90 + MARGIN_FIX_ERROR || temp * -1 >= 90 - MARGIN_FIX_ERROR) {
+                    //Definately a Right Turn
+                    RightTurn.setVisibility(View.VISIBLE);
+                    currentLabel = "Left Turn";
+                    bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    //perform your animation when button is released
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(BUFFER_TIME_MILLS);
+                                //We will Buffer for some time after resetting the Value
+                                INITIAL_VALUE = (int) currentAzimuth;
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+                } else {
+                    RightTurn.setVisibility(View.INVISIBLE);
+                    currentLabel = "Move Forward";
+                    bForward.setBackgroundColor(getResources().getColor(R.color.green_400));
+                }
+            } else {
+                //Positive // Possible a Left Turn
+                if (temp >= 90 + MARGIN_FIX_ERROR || temp >= 90 - MARGIN_FIX_ERROR) {
+                    //Definately a Left Turn
+                    LeftTurn.setVisibility(View.VISIBLE);
+                    currentLabel = "Right Turn";
+                    bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(BUFFER_TIME_MILLS);
+                                //We will Buffer for some time after resetting the Value
+                                INITIAL_VALUE = (int) currentAzimuth;
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).start();
+                } else {
+                    LeftTurn.setVisibility(View.INVISIBLE);
+                    currentLabel = "Move Forward";
+                    bForward.setBackgroundColor(getResources().getColor(R.color.green_400));
+                }
+            }
+            RelativeDegree.setText(temp + "° ");
+        }
+
+        animator.setDuration(500);
+        animator.setRepeatCount(0);
+        animator.setFillAfter(true);
+
+        compassDial.startAnimation(animator);
+    }
+
+    private int getDifference(int initial_value, int currentAzimuth) {
+        return Math.min((initial_value - currentAzimuth) < 0 ? (initial_value - currentAzimuth + 360) : (initial_value - currentAzimuth),
+                (currentAzimuth - initial_value) < 0 ? (currentAzimuth - initial_value + 360) : (currentAzimuth - initial_value));
+    }
+
+    private int getDirectionalDifference(int initial_value, int currentAzimuth) {
+        return ((((initial_value - currentAzimuth) % 360) + 540) % 360) - 180;
     }
 
     public void onBackPressed() {
@@ -399,26 +491,36 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.bMoveBackWard:
-                currentLabel = "Move BackWard";
-                bStop.setBackgroundColor(getResources().getColor(R.color.orange_300));
-                bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                bBackward.setBackgroundColor(getResources().getColor(R.color.green_400));
-                break;
             case R.id.bMoveForward:
                 currentLabel = "Move Forward";
                 bStop.setBackgroundColor(getResources().getColor(R.color.orange_300));
                 bForward.setBackgroundColor(getResources().getColor(R.color.green_300));
-                bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
                 break;
 
             case R.id.bStop:
                 currentLabel = "Stop";
                 bStop.setBackgroundColor(getResources().getColor(R.color.red_400));
                 bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
-                bBackward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
                 break;
 
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        compass.stop();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        compass.start();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        compass.stop();
     }
 }

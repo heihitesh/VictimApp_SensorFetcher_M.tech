@@ -84,13 +84,6 @@ public class MainPage extends Fragment {
     }
 
     private void initilize() {
-        this.selectedLabels.add("MoveForward");
-        this.selectedLabels.add("Stop");
-        this.selectedLabels.add("LeftTurn");
-        this.selectedLabels.add("RightTurn");
-        this.selectedLabels.add("MoveBackward");
-        this.selectedLabels.add("Rotate_180");
-        this.selectedLabels.add("Rotate_360");
 
         fabAddSensor.setOnClickListener(new View.OnClickListener() {
             @Override

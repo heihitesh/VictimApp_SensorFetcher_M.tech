@@ -6,6 +6,7 @@
     android:layout_gravity="top|center_vertical|center_horizontal|center"
     android:gravity="top|center_vertical|center_horizontal|center"
     android:orientation="vertical"
+    android:weightSum="10"
     tools:context=".ui.home.VisualizeActivity">
 
     <com.github.mikephil.charting.charts.LineChart
@@ -13,7 +14,40 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="10dp"
+        android:layout_weight="1"
         android:visibility="visible" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:layout_weight="9"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:padding="5dp"
+        android:weightSum="10">
+
+        <Button
+            android:id="@+id/bView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:drawableLeft="@drawable/ic_insert_drive_file_black_24dp"
+            android:drawableTint="@color/quantum_black_100"
+            android:text="View"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/bShare"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="5"
+            android:drawableLeft="@drawable/ic_menu_share"
+            android:drawableTint="@color/quantum_black_100"
+            android:text="Share" />
+    </LinearLayout>
+
+
 </LinearLayout>
 
 

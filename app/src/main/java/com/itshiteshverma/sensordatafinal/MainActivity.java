@@ -47,8 +47,6 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
         toastHelper = new ToastHelper(MainActivity.this, getLayoutInflater());
-
-
         setPermissions();
     }
 

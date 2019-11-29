@@ -1,12 +1,11 @@
 package com.itshiteshverma.sensordatafinal.ui.home;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ProgressBar;
+import android.widget.Button;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
@@ -28,13 +27,16 @@ public class VisualizeActivity extends AppCompatActivity {
     ArrayList<String> labels;
     LineChart lineChart;
     ArrayList<Float> timestamps;
+    Button bView, bShare;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_visualize);
-        lineChart = (LineChart) findViewById(R.id.lineChart);
+        lineChart = findViewById(R.id.lineChart);
         lineChart.animateX(3000); // animate horizontal and vertical 3000 milliseconds
+        bView = findViewById(R.id.bView);
+        bShare = findViewById(R.id.bShare);
 
         AsyncTaskRunner runner = new AsyncTaskRunner();
         runner.execute();
@@ -91,12 +93,12 @@ public class VisualizeActivity extends AppCompatActivity {
 
     public void plotLines() {
         if (!this.dataset.isEmpty()) {
-            int length = ((Float[]) this.dataset.get(0)).length;
+            int length = this.dataset.get(0).length;
             LineData lineData = new LineData();
             for (int i = 0; i < length; i++) {
                 ArrayList arrayList = new ArrayList();
                 for (int i2 = 0; i2 < this.dataset.size(); i2++) {
-                    arrayList.add(new Entry((float) i2, ((Float[]) this.dataset.get(i2))[i].floatValue()));
+                    arrayList.add(new Entry((float) i2, this.dataset.get(i2)[i].floatValue()));
                 }
                 LineDataSet lineDataSet = new LineDataSet(arrayList, Character.toString(Utils.chartLabels.charAt(i)));
                 lineDataSet.setColor(Utils.chartColors[i]);
@@ -152,6 +154,6 @@ public class VisualizeActivity extends AppCompatActivity {
                 str3 = str4;
             }
         }
-        return new Object[]{(Float[]) arrayList.toArray(new Float[arrayList.size()]), str3};
+        return new Object[]{arrayList.toArray(new Float[arrayList.size()]), str3};
     }
 }
