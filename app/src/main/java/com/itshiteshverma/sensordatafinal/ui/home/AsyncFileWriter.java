@@ -1,6 +1,7 @@
 package com.itshiteshverma.sensordatafinal.ui.home;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,7 +29,7 @@ class AsyncFileWriter extends AsyncTask<Void, Void, Void> {
                 e.printStackTrace();
             }
             while (!this.queue.isEmpty()) {
-                Object[] objArr = (Object[]) this.queue.remove();
+                Object[] objArr = this.queue.remove();
                 appendToFile((String) objArr[0], (File) objArr[1]);
             }
         }
@@ -37,13 +38,24 @@ class AsyncFileWriter extends AsyncTask<Void, Void, Void> {
 
     private void appendToFile(String str, File file) {
         try {
+            //Time,xAxis,yAxis,ZAxis,Current Label
+//            String[] arrSplit = str.split(VALUES_SEPARATOR);
+//            Note note;
+//            note = new Note(Long.parseLong(arrSplit[0]), Float.parseFloat(arrSplit[1]), Float.parseFloat(arrSplit[2])
+//                    , Float.parseFloat(arrSplit[3]), stringDataSetFileName, arrSplit[4]);
+//
+//            dbHelper.setValue(note);
+            Log.d("HIT_TAG", str);
+
             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file, true)));
             bufferedWriter.append(str);
             bufferedWriter.flush();
             bufferedWriter.close();
-        } catch (IOException e) {
+        } catch (
+                IOException e) {
             e.printStackTrace();
         }
+
     }
 
     /* access modifiers changed from: 0000 */

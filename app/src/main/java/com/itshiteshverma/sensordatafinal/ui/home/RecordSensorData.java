@@ -1,15 +1,18 @@
 package com.itshiteshverma.sensordatafinal.ui.home;
 
+import android.app.Dialog;
+import android.app.Notification;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -19,6 +22,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -26,22 +30,36 @@ import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.itshiteshverma.sensordatafinal.R;
 
 import org.zeroturnaround.zip.commons.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static com.itshiteshverma.sensordatafinal.ui.home.DataBase_ImportExportHandler.exportDB;
+import static com.itshiteshverma.sensordatafinal.ui.home.MyApplication.NOTIFICATION_CHANNEL_AUTO_BACKUP;
 
 
 public class RecordSensorData extends AppCompatActivity implements SensorEventListener, View.OnClickListener {
@@ -81,6 +99,14 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     private float currentAzimuth;
     private int INITIAL_VALUE;
     private int MARGIN_FIX_ERROR = 10;
+    public static final int REQUEST_CODE_SET_BACKUP_JOB_SCHEDULE = 836; //Any 4 digit Random Value
+    public static final String WORK_TAG_AUTO_BACKUP = "SENSOR_DATA";
+    private final int notificationID = 1036;
+    StorageReference filePath;
+    NotificationCompat.Builder notification;
+    NotificationManagerCompat notificationManager;
+    private DatabaseHelper dbHelper;
+
 
     public void onAccuracyChanged(Sensor sensor, int i) {
     }
@@ -89,6 +115,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     public void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_record_sensor_data);
+        dbHelper = new DatabaseHelper(this);
 
         currentLabel = "NA";
         toastHelper = new ToastHelper(RecordSensorData.this, getLayoutInflater());
@@ -128,7 +155,6 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         setupCompass();
 
     }
-
 
 
     public void onSensorChanged(SensorEvent sensorEvent) {
@@ -206,9 +232,9 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
             if (temp < 0) {
                 //Negative // Possible a Right Turn
                 if (temp * -1 >= 90 + MARGIN_FIX_ERROR || temp * -1 >= 90 - MARGIN_FIX_ERROR) {
-                    //Definately a Right Turn
+                    //Definitely a Right Turn
                     RightTurn.setVisibility(View.VISIBLE);
-                    currentLabel = "Left Turn";
+                    currentLabel = "Right Turn";
                     bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
                     //perform your animation when button is released
                     new Thread(new Runnable() {
@@ -231,9 +257,9 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
             } else {
                 //Positive // Possible a Left Turn
                 if (temp >= 90 + MARGIN_FIX_ERROR || temp >= 90 - MARGIN_FIX_ERROR) {
-                    //Definately a Left Turn
+                    //Definitely a Left Turn
                     LeftTurn.setVisibility(View.VISIBLE);
-                    currentLabel = "Right Turn";
+                    currentLabel = "Left Turn";
                     bForward.setBackgroundColor(getResources().getColor(R.color.yellow_200));
                     new Thread(new Runnable() {
                         @Override
@@ -273,25 +299,166 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
     }
 
     public void onBackPressed() {
-        RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Stop current session ?");
-        builder.setMessage("The current session will be stopped and saved. Do you want to proceed to Main Page ?");
-        builder.setNegativeButton("CANCEL", null);
-        builder.setPositiveButton("OK", new OnClickListener() {
-            public final void onClick(DialogInterface dialogInterface, int i) {
+        RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
+        final Dialog dialog = new Dialog(this);
+
+        dialog.requestWindowFeature(1);
+        dialog.setContentView(R.layout.dialog_add_value_dark);
+        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(0));
+        dialog.setCancelable(true);
+        dialog.findViewById(R.id.bt_close).setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                dialog.dismiss();
+            }
+        });
+        Button btnAddPt = dialog.findViewById(R.id.bSave);
+        Button btnCancel = dialog.findViewById(R.id.bCancel);
+        final CheckBox checkBoxSendData = dialog.findViewById(R.id.checkboxSendData);
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dialog.dismiss();
+            }
+        });
+        btnAddPt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
                 RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
                 RecordSensorData.this.asyncFileWriter.stop();
                 StringBuilder sb = new StringBuilder();
                 sb.append("Session stopped. Data file saved in: ");
                 sb.append(Utils.APP_STORAGE_DIR);
                 Toast.makeText(RecordSensorData.this, sb.toString(), Toast.LENGTH_LONG).show();
-
+                exportDB(RecordSensorData.this, getLayoutInflater());
+                if (checkBoxSendData.isChecked()) {
+                    //We Can Upload the Data 
+                    UploadData();
+                }
+                dialog.dismiss();
                 RecordSensorData.this.finish();
+
             }
         });
-        builder.create().show();
+
+        dialog.show();
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//        builder.setTitle("Stop current session ?");
+//        builder.setMessage("The current session will be stopped and saved. Do you want to proceed to Main Page ?");
+//        builder.setNegativeButton("CANCEL", null);
+//        builder.setPositiveButton("OK", new OnClickListener() {
+//            public final void onClick(DialogInterface dialogInterface, int i) {
+//                RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
+//                RecordSensorData.this.asyncFileWriter.stop();
+//                StringBuilder sb = new StringBuilder();
+//                sb.append("Session stopped. Data file saved in: ");
+//                sb.append(Utils.APP_STORAGE_DIR);
+//                Toast.makeText(RecordSensorData.this, sb.toString(), Toast.LENGTH_LONG).show();
+//                exportDB(RecordSensorData.this, getLayoutInflater());
+//                RecordSensorData.this.finish();
+//
+//            }
+//        });
+//        builder.create().show();
+    }
+
+    private void UploadData() {
+
+        notificationManager = NotificationManagerCompat.from(getApplicationContext());
+
+        String CurrentDate = "";
+        String CurrentTime = "";
+        try {
+            CurrentDate = new SimpleDateFormat("EEE, d MMM ", Locale.getDefault()).format(new Date());
+            CurrentTime = new SimpleDateFormat("h:mm a", Locale.getDefault()).format(new Date());
+
+        } catch (Exception e) {
+
+        }
+        int PROGRESS_MAX = 100;
+        int PROGRESS_CURRENT = 0;
+
+        notification = new NotificationCompat.Builder(getApplicationContext(), NOTIFICATION_CHANNEL_AUTO_BACKUP);
+        notification.setSmallIcon(R.drawable.icon_right_arrow);
+        notification.setContentTitle("Uploading Sensor Data");
+        notification.setContentText("Please Stay Connected To Internet, Date : " + CurrentDate + ", " + CurrentTime);
+        notification.setPriority(NotificationCompat.PRIORITY_HIGH);
+        notification.setOngoing(true);
+        notification.setProgress(PROGRESS_MAX, PROGRESS_CURRENT, false);
+        notificationManager.notify(notificationID, notification.build());
+
+        StorageReference mStorageReference = FirebaseStorage.getInstance().getReference();
+        String DATABASE_DATA = "DATABASE_DATA";
+
+        filePath = mStorageReference.child("SensorDataCollectionApp").child(DATABASE_DATA).child("Hitesh")
+                .child(Note.DATABASE_NAME + ".db");
+        try {
+            String appFolder_Name = this.getString(R.string.app_name);
+            File appFolderLocation = new File(Environment.getExternalStorageDirectory(), appFolder_Name);
+            if (!appFolderLocation.exists()) {
+                appFolderLocation.mkdirs();
+            }
+            if (appFolderLocation.canWrite()) {
+                String backupDBPath = String.format("%s.db", Note.DATABASE_NAME);
+                File currentDB = new File(appFolderLocation, backupDBPath);
+                Uri finalFile = Uri.fromFile(currentDB);
+                final String finalCurrentDate = CurrentDate;
+                final String finalCurrentTime = CurrentTime;
+                filePath.putFile(finalFile).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                        filePath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                            @Override
+                            public void onSuccess(Uri uri) {
+                                String ImageURIString = uri.toString();
+                                SimpleDateFormat s = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+                                String timeStamp = s.format(new Date());
+                                notification.setContentTitle("Uploaded Completed Successfully");
+                                notification.setOngoing(false); //Can Be Removed From the Notification
+                                notification.setContentText("Last Updated On  : " + finalCurrentDate + ", " + finalCurrentTime)
+                                        .setProgress(0, 0, false);
+
+                                if (notificationManager != null) {
+                                    notificationManager.notify(notificationID, notification.build());
+                                }
+                            }
+                        });
+                    }
+                })
+                        .addOnFailureListener(new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                notification.setContentTitle("Back Up Failed");
+                                notification.setOngoing(false); //Can Be Removed From the Notification
+                                notification.setSmallIcon(R.drawable.ic_error_outline);
+                                notification.setContentText("Please Connect To Internet, And Try Again")
+                                        .setProgress(0, 0, false);
+                                notification.setOngoing(false);
+
+                                if (notificationManager != null) {
+                                    notificationManager.notify(notificationID, notification.build());
+                                }
+                            }
+                        })
+                        .addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                            @Override
+                            public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                                double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                                notification.setProgress(100, (int) progress, false);
+
+                                Notification ni = notification.build();
+                                if (notificationManager != null) {
+                                    notificationManager.notify(notificationID, ni);
+                                }
+                            }
+                        });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            toastHelper.toastIconError("Data Not Uploaded : " + e.getMessage());
+        }
+
+
     }
 
     public void onClickStartPauseButton() {
@@ -469,16 +636,38 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         }
     }
 
-    private String sensorEventToString(SensorEvent sensorEvent, String str) {
+    private String sensorEventToString(SensorEvent sensorEvent, String seprator) {
+
+        long timeDiff = System.currentTimeMillis() - READ_SENSOR_TIME_START;
+        float xAxis = sensorEvent.values[0];
+        float yAxis = sensorEvent.values[1];
+        float zAxis = sensorEvent.values[2];
+        String sampleName = getIntent().getStringExtra(MainPage.FILE_NAME_KEY);
+
+        Note note = new Note(timeDiff, xAxis, yAxis, zAxis, sampleName, currentLabel);
+        dbHelper.setValue(note);
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//
+//                    Thread.sleep(500);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }).start();
+
         StringBuilder sb = new StringBuilder();
-        sb.append(System.currentTimeMillis() - READ_SENSOR_TIME_START);
-        sb.append(str);
-        sb.append(Utils.floatsToString(sensorEvent.values, str));
+        sb.append(timeDiff);
+        sb.append(seprator);
+        sb.append(Utils.floatsToString(sensorEvent.values, seprator));
         String sb2 = sb.toString();
         if (!this.currentLabel.isEmpty()) {
             StringBuilder sb3 = new StringBuilder();
             sb3.append(sb2);
-            sb3.append(str);
+            sb3.append(seprator);
             sb3.append(this.currentLabel);
             sb2 = sb3.toString();
         }

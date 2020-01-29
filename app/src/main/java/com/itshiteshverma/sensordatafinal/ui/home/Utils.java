@@ -2,8 +2,6 @@ package com.itshiteshverma.sensordatafinal.ui.home;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.graphics.drawable.StateListDrawable;
 import android.hardware.Sensor;
@@ -11,12 +9,9 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Environment;
 import android.os.Handler;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.internal.view.SupportMenu;
 import androidx.core.view.InputDeviceCompat;
@@ -115,7 +110,7 @@ class Utils {
         StringBuilder sb = new StringBuilder();
         sb.append(Environment.getExternalStorageDirectory());
         sb.append(File.separator);
-        sb.append("SensorsDataCollector");
+        sb.append("SensorDataFinal");
         APP_STORAGE_DIR = sb.toString();
     }
 

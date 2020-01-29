@@ -43,7 +43,7 @@ public class MainPage extends Fragment {
     FloatingActionButton fabAddSensor;
     LinearLayout listOfSensorsView;
     TextView displaySensor;
-    Button bStart;
+    Button bStart, bClearDB;
     EditText etFileName;
 
     public static final String DURATION_KEY = "duration";
@@ -59,6 +59,8 @@ public class MainPage extends Fragment {
     RadioGroup radioGroupFrequency;
     LinearLayout llMainLayout;
     NumberPicker hourNumberPicker, minutesNumberPicker;
+    private DatabaseHelper dbHelper;
+
 
     public MainPage() {
         // Required empty public constructor
@@ -73,11 +75,13 @@ public class MainPage extends Fragment {
         fabAddSensor = view.findViewById(R.id.selectSensorsBtn);
         displaySensor = view.findViewById(R.id.displaySensorsTextView);
         bStart = view.findViewById(R.id.saveBtn);
+        bClearDB = view.findViewById(R.id.bcleardb);
         etFileName = view.findViewById(R.id.dbNameEditText);
         radioGroupFrequency = view.findViewById(R.id.radioGroupFrequency);
         llMainLayout = view.findViewById(R.id.llMainLayout);
         hourNumberPicker = view.findViewById(R.id.hour_picker);
         minutesNumberPicker = view.findViewById(R.id.minute_picker);
+        dbHelper = new DatabaseHelper(getActivity());
 
         initilize();
         return view;
@@ -142,6 +146,14 @@ public class MainPage extends Fragment {
                 } else {
                     toastHelper.toastIconError("Add a Sensor.");
                 }
+            }
+        });
+
+        bClearDB.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dbHelper.clearValueTable();
+                toastHelper.toastIconInfo("DataBase Cleared");
             }
         });
     }

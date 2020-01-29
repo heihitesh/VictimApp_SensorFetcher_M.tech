@@ -3,6 +3,7 @@ package com.itshiteshverma.sensordatafinal.ui.home;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,7 +11,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 
@@ -44,7 +44,7 @@ public class FileList extends Fragment {
         // Inflate the layout for this fragment
         view = inflater.inflate(R.layout.fragment_list_file, container, false);
         llExists = view.findViewById(R.id.llExistLayout);
-        listView = (ListView) view.findViewById(R.id.listView);
+        listView = view.findViewById(R.id.listView);
         return view;
     }
 
@@ -53,6 +53,12 @@ public class FileList extends Fragment {
         super.onResume();
         listFileNames.clear(); //Clearing any Left Data
         listFiles.clear();
+
+        String appFolder_Name = getActivity().getString(R.string.app_name);
+        File appFolderLocation = new File(Environment.getExternalStorageDirectory(), appFolder_Name);
+        if (!appFolderLocation.exists()) {
+            appFolderLocation.mkdirs();
+        }
 
         for (File file : new File(Utils.APP_STORAGE_DIR).listFiles()) {
             this.listFileNames.add(file.getName().toUpperCase());
@@ -68,6 +74,7 @@ public class FileList extends Fragment {
                 }
             }
         }
+
         listView.setAdapter(new ArrayAdapter(getActivity(), R.layout.activity_file_list_row, R.id.RowTextView, listFileNames));
         onListItemClick();
 
@@ -78,7 +85,7 @@ public class FileList extends Fragment {
             public final void onItemClick(AdapterView adapterView, View view, int i, long j) {
                 Intent intent = new Intent(getActivity(), VisualizeActivity.class);
                 String filePath = "filePath";
-                File file = (File) listFiles.get(i);
+                File file = listFiles.get(i);
                 intent.putExtra(filePath, file.getAbsolutePath());
                 startActivity(intent);
             }
