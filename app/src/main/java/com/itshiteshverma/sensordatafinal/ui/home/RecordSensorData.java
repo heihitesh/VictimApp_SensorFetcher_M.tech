@@ -129,12 +129,10 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         RightTurn = findViewById(R.id.llRightTurn);
         compassDial = findViewById(R.id.compass_dial);
 
-
         bForward = findViewById(R.id.bMoveForward);
         bStop = findViewById(R.id.bStop);
         bForward.setOnClickListener(this);
         bStop.setOnClickListener(this);
-
 
         ivStop = findViewById(R.id.ivStop);
         tvHide = findViewById(R.id.tvHide);
@@ -151,9 +149,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         onClickNavBtns();
         setAdapterChartViewPager();
         onChangeChartViewPager();
-
         setupCompass();
-
     }
 
 
@@ -166,7 +162,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         this.queue.add(new Object[]{sensorEventToString, file});
         int i2 = i + 1;
         this.nSamplesSpArray.put(type, i2);
-        long j = (long) i2;
+        long j = i2;
         if (j % CHART_UPDATE_PERIOD == 0) {
             Utils.updateChart(lineChart, sensorEvent.values, j, MAX_SAMPLES_DISPLAY);
         }
@@ -192,15 +188,12 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
 
 
     private void adjustArrow(float azimuth) {
-
-
         Animation animator = new RotateAnimation(-currentAzimuth, -azimuth,
                 Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,
                 0.5f);
         currentAzimuth = azimuth;
         String display = (int) currentAzimuth + "";
         String cardDirect;
-
         if (currentAzimuth == 0 || currentAzimuth == 360)
             cardDirect = "N";
         else if (currentAzimuth > 0 && currentAzimuth < 90)
@@ -219,9 +212,7 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
             cardDirect = "NW";
         else
             cardDirect = "Unknown";
-
         CompassDegree.setText(display + "°" + " " + cardDirect);
-
         if (!INITIAL_VALUE_SET) {
             //Value is not set
             INITIAL_VALUE = (int) currentAzimuth;
@@ -285,15 +276,15 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         animator.setDuration(500);
         animator.setRepeatCount(0);
         animator.setFillAfter(true);
-
         compassDial.startAnimation(animator);
     }
 
-    private int getDifference(int initial_value, int currentAzimuth) {
-        return Math.min((initial_value - currentAzimuth) < 0 ? (initial_value - currentAzimuth + 360) : (initial_value - currentAzimuth),
-                (currentAzimuth - initial_value) < 0 ? (currentAzimuth - initial_value + 360) : (currentAzimuth - initial_value));
-    }
+//    private int getDifference(int initial_value, int currentAzimuth) {
+//        return Math.min((initial_value - currentAzimuth) < 0 ? (initial_value - currentAzimuth + 360) : (initial_value - currentAzimuth),
+//                (currentAzimuth - initial_value) < 0 ? (currentAzimuth - initial_value + 360) : (currentAzimuth - initial_value));
+//    }
 
+    //Gives Compass Rotation (clockwise or anti-clockwise)
     private int getDirectionalDifference(int initial_value, int currentAzimuth) {
         return ((((initial_value - currentAzimuth) % 360) + 540) % 360) - 180;
     }
@@ -342,28 +333,9 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
         });
 
         dialog.show();
-//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-//        builder.setTitle("Stop current session ?");
-//        builder.setMessage("The current session will be stopped and saved. Do you want to proceed to Main Page ?");
-//        builder.setNegativeButton("CANCEL", null);
-//        builder.setPositiveButton("OK", new OnClickListener() {
-//            public final void onClick(DialogInterface dialogInterface, int i) {
-//                RecordSensorData.this.sensorManager.unregisterListener(RecordSensorData.this);
-//                RecordSensorData.this.asyncFileWriter.stop();
-//                StringBuilder sb = new StringBuilder();
-//                sb.append("Session stopped. Data file saved in: ");
-//                sb.append(Utils.APP_STORAGE_DIR);
-//                Toast.makeText(RecordSensorData.this, sb.toString(), Toast.LENGTH_LONG).show();
-//                exportDB(RecordSensorData.this, getLayoutInflater());
-//                RecordSensorData.this.finish();
-//
-//            }
-//        });
-//        builder.create().show();
     }
 
     private void UploadData() {
-
         notificationManager = NotificationManagerCompat.from(getApplicationContext());
 
         String CurrentDate = "";
@@ -617,7 +589,6 @@ public class RecordSensorData extends AppCompatActivity implements SensorEventLi
 
     private void initSensors() {
         this.sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
         Iterator it = getIntent().getIntegerArrayListExtra(MainPage.SENSOR_TYPES_KEY).iterator();
         while (it.hasNext()) {
             this.selectedSensors.add(this.sensorManager.getDefaultSensor(((Integer) it.next()).intValue()));
